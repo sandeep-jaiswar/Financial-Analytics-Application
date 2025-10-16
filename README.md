@@ -130,9 +130,13 @@ This will start all services:
 
 - **Web UI**: http://localhost:8000/
 - **Admin Panel**: http://localhost:8000/admin/
-- **API Endpoints**: http://localhost:8000/api/stocks/
+- **API Endpoints**: 
+  - Stock Data (Yahoo Finance): http://localhost:8000/api/stocks/
+  - Market Data (ClickHouse): http://localhost:8000/api/marketdata/
 
 ### Testing API Endpoints
+
+#### Stock Data API (Yahoo Finance)
 
 **Get real-time quote:**
 ```bash
@@ -150,6 +154,25 @@ curl -X POST http://localhost:8000/api/stocks/quotes/ \
   -H "Content-Type: application/json" \
   -d '{"symbols": ["AAPL", "GOOGL", "MSFT"]}'
 ```
+
+#### Market Data API (ClickHouse)
+
+**Get all symbols:**
+```bash
+curl http://localhost:8000/api/marketdata/symbols/
+```
+
+**Get market data for a symbol:**
+```bash
+curl "http://localhost:8000/api/marketdata/AAPL/?from=2024-01-01&to=2024-10-31"
+```
+
+**Get latest market data:**
+```bash
+curl "http://localhost:8000/api/marketdata/latest/?symbols=AAPL,GOOGL,MSFT"
+```
+
+For complete Market Data API documentation, see [MARKETDATA_API.md](MARKETDATA_API.md).
 
 ### Running Tests
 
@@ -296,6 +319,8 @@ Main settings are in `financial_analytics/settings.py`:
   - [x] Retry strategy with exponential backoff
   - [x] Alert logging for failures
 - [x] REST API: Django REST Framework endpoints
+  - [x] YahooFinance API endpoints
+  - [x] Market Data API from ClickHouse with pagination and filtering
 - [x] Web UI: Dashboard and visualization (basic)
 - [x] Error Monitoring: Logging, alerts, health endpoints
 - [x] Testing: Comprehensive test suite
@@ -348,6 +373,7 @@ Check logs in the `logs/` directory:
 - [Django Quickstart Guide](DJANGO_QUICKSTART.md) - Quick setup guide
 - [Detailed Django Documentation](README_DJANGO.md) - Comprehensive Django documentation
 - [Database Setup](db/README.md) - ClickHouse database configuration
+- [Market Data API](MARKETDATA_API.md) - REST API documentation for market data endpoints
 
 ## License
 
