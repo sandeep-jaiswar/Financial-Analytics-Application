@@ -1,0 +1,23 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: financial-analytics-data-ingestion
+
+clickhouse:
+  url: jdbc:clickhouse://localhost:8123/financial_data
+  username: default
+  password: ""
+
+ingestion:
+  symbols: AAPL,GOOGL,MSFT,AMZN,TSLA,META,NVDA,NFLX
+  history:
+    days: 30
+  schedule:
+    cron: "0 0 18 * * ?"
+
+logging:
+  level:
+    com.financial.analytics: INFO
+    yahoofinance: WARN
