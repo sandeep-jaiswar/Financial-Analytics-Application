@@ -46,6 +46,7 @@ This is a Gradle multi-module project with the following components:
 
 - JDK 17 or higher
 - Gradle 8.5+ (wrapper included)
+- Docker and Docker Compose (for local ClickHouse instance)
 - ClickHouse instance (for data-ingestion module)
 
 ### Building the Project
@@ -60,6 +61,21 @@ This is a Gradle multi-module project with the following components:
 ./gradlew :analytics-core:build
 ./gradlew :ui:build
 ```
+
+### Setting Up ClickHouse Database
+
+```bash
+# Start ClickHouse with Docker
+docker compose up -d clickhouse
+
+# Verify schema is created
+./db/verify-schema.sh
+
+# Or manually initialize
+docker exec -it financial-analytics-clickhouse clickhouse-client --multiquery < db/schema/001_create_market_data_table.sql
+```
+
+For more details on database setup, see [db/README.md](db/README.md).
 
 ### Running Tests
 
@@ -116,10 +132,21 @@ financial-analytics-application/
 │   │   │   └── resources/
 │   │   └── test/
 │   └── build.gradle.kts
+├── db/                           # Database schemas and scripts
+│   ├── schema/                   # SQL migration scripts
+│   │   ├── 001_create_market_data_table.sql
+│   │   ├── 002_create_market_data_table_replicated.sql
+│   │   └── README.md
+│   ├── init-schema.sh            # Schema initialization
+│   ├── verify-schema.sh          # Schema verification
+│   └── README.md
 ├── buildSrc/                     # Gradle convention plugins
 │   ├── src/main/kotlin/
 │   │   └── Dependencies.kt
 │   └── build.gradle.kts
+├── clickhouse-config/            # ClickHouse configuration
+│   └── custom.xml
+├── docker-compose.yml            # Docker services
 ├── build.gradle.kts              # Root build configuration
 ├── settings.gradle.kts           # Multi-module settings
 ├── gradle.properties             # Gradle properties
@@ -161,7 +188,7 @@ financial-analytics-application/
 
 - [x] Initial monorepo structure
 - [ ] API Layer: YahooFinance integration
-- [ ] Database Layer: ClickHouse schema for time series data
+- [x] Database Layer: ClickHouse schema for time series data
 - [ ] Data Sync: Automated data ingestion pipeline
 - [ ] Analytics Engine: Model pipeline framework
 - [ ] Web UI: Dashboard and visualization

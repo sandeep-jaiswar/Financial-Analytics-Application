@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.1-alpine
+    container_name: financial-analytics-clickhouse
+    hostname: clickhouse
+    ports:
+      - "8123:8123"  # HTTP interface
+      - "9000:9000"  # Native client interface
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./db/schema/001_create_market_data_table.sql:/docker-entrypoint-initdb.d/001_create_market_data_table.sql:ro
+      - ./clickhouse-config:/etc/clickhouse-server/config.d:ro
+    environment:
+      CLICKHOUSE_DB: financial_data
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - financial-analytics
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  # Optional: ClickHouse client for easy CLI access
+  clickhouse-client:
+    image: clickhouse/clickhouse-client:24.1-alpine
+    container_name: financial-analytics-clickhouse-client
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    networks:
+      - financial-analytics
+    entrypoint: /bin/sh
+    stdin_open: true
+    tty: true
+    command: -c "while true; do sleep 30; done"
+    profiles:
+      - tools
+
+volumes:
+  clickhouse_data:
+    driver: local
+    name: financial_analytics_clickhouse_data
+
+networks:
+  financial-analytics:
+    name: financial-analytics
+    driver: bridge
