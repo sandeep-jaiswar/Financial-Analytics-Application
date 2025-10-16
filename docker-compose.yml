@@ -10,7 +10,7 @@ services:
       - "9000:9000"  # Native client interface
     volumes:
       - clickhouse_data:/var/lib/clickhouse
-      - ./db/schema:/docker-entrypoint-initdb.d:ro
+      - ./db/schema/001_create_market_data_table.sql:/docker-entrypoint-initdb.d/001_create_market_data_table.sql:ro
       - ./clickhouse-config:/etc/clickhouse-server/config.d:ro
     environment:
       CLICKHOUSE_DB: financial_data
