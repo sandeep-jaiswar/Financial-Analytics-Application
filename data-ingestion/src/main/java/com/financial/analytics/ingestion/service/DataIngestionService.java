@@ -113,16 +113,6 @@ public class DataIngestionService {
     }
     
     /**
-     * Scheduled task to ingest latest data
-     * Runs every day at 6 PM (after market close)
-     */
-    @Scheduled(cron = "${ingestion.schedule.cron:0 0 18 * * ?}")
-    public void scheduledIngestion() {
-        logger.info("Starting scheduled ingestion for configured symbols");
-        ingestHistoricalDataBatch(symbols, 7); // Fetch last 7 days to catch up on any missed data
-    }
-    
-    /**
      * Ingest current/live quote for a symbol
      * 
      * @param symbol Stock symbol
