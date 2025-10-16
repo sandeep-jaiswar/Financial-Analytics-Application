@@ -23,8 +23,9 @@ Thumbs.db
 *.log
 
 # Application
-application.properties
 application-local.properties
+application-dev.properties
+application-prod.properties
 
 # Secrets
 secrets/
