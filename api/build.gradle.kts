@@ -2,15 +2,34 @@ plugins {
     id("org.springframework.boot")
     id("io.spring.dependency-management")
     kotlin("plugin.spring")
+    java
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
     
+    // Yahoo Finance API
+    implementation("com.yahoofinance-api:YahooFinanceAPI:3.17.0")
+    
+    // Rate limiting
+    implementation("io.github.resilience4j:resilience4j-ratelimiter:2.1.0")
+    implementation("io.github.resilience4j:resilience4j-spring-boot3:2.1.0")
+    
+    // Logging
+    implementation("org.slf4j:slf4j-api:2.0.9")
+    
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.mockito:mockito-core:5.8.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.8.0")
 }
 
 tasks.bootJar {

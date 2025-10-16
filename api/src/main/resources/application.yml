@@ -1,0 +1,19 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: financial-analytics-api
+
+logging:
+  level:
+    com.financial.analytics: INFO
+    yahoofinance: WARN
+
+resilience4j:
+  ratelimiter:
+    instances:
+      yahooFinance:
+        limitForPeriod: 5
+        limitRefreshPeriod: 1s
+        timeoutDuration: 10s
