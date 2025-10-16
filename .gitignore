@@ -21,6 +21,7 @@ Thumbs.db
 
 # Logs
 *.log
+logs/
 
 # Application
 application-local.properties
@@ -47,3 +48,44 @@ secrets/
 # Docker
 docker-compose.override.yml
 .docker/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+/static/
+/media/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/

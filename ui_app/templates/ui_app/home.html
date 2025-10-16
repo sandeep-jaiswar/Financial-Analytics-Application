@@ -1,0 +1,42 @@
+{% extends 'ui_app/base.html' %}
+
+{% block content %}
+<div class="content">
+    <div class="card">
+        <h2>Welcome to Financial Analytics Dashboard</h2>
+        <p>A comprehensive financial analytics platform that pulls market data from YahooFinance API, stores it in ClickHouse, and enables quantitative analysis.</p>
+    </div>
+    
+    <div class="feature-grid">
+        <div class="feature-card">
+            <h3>📊 Real-time Data</h3>
+            <p>Access real-time stock quotes and market data from Yahoo Finance API with rate limiting and error handling.</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>📈 Historical Analysis</h3>
+            <p>Retrieve and analyze historical market data with support for daily, weekly, and monthly intervals.</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>💾 ClickHouse Storage</h3>
+            <p>Efficient time-series data storage optimized for analytical queries and high-volume data ingestion.</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>⏰ Scheduled Ingestion</h3>
+            <p>Automated daily and intraday data ingestion with retry logic and failure alerts.</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>🔄 REST API</h3>
+            <p>RESTful API endpoints for fetching quotes, historical data, and batch queries.</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>🛡️ Robust Error Handling</h3>
+            <p>Comprehensive error handling with logging, alerts, and automatic retry mechanisms.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
