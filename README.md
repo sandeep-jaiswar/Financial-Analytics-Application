@@ -14,9 +14,11 @@ This is a Gradle multi-module project with the following components:
   - Spring Boot application
 
 - **data-ingestion** - Data synchronization service
-  - Ingests financial data from the API layer
-  - Stores data in ClickHouse
-  - Keeps datasets updated
+  - Ingests financial data from Yahoo Finance API
+  - Stores data in ClickHouse with deduplication
+  - Scheduled updates (daily and intraday)
+  - Retry strategy with exponential backoff
+  - Alert logging for failures
   - Spring Boot application
 
 - **analytics-core** - Analytics engine
@@ -33,19 +35,20 @@ This is a Gradle multi-module project with the following components:
 
 ## Technology Stack
 
-- **Language**: Kotlin
+- **Language**: Kotlin & Java
 - **Build Tool**: Gradle (Kotlin DSL)
 - **Framework**: Spring Boot 3.2.2
 - **Database**: ClickHouse (optimized for analytical queries)
 - **Data Source**: YahooFinance API
-- **JDK**: Java 17+
+- **JDK**: Java 21+ (with support for Java 25)
+- **Gradle**: 8.10.2+
 
 ## Getting Started
 
 ### Prerequisites
 
-- JDK 17 or higher
-- Gradle 8.5+ (wrapper included)
+- JDK 21 or higher (Java 25 supported)
+- Gradle 8.10.2+ (wrapper included)
 - Docker and Docker Compose (for local ClickHouse instance)
 - ClickHouse instance (for data-ingestion module)
 
@@ -187,14 +190,18 @@ financial-analytics-application/
 ## Feature Roadmap
 
 - [x] Initial monorepo structure
-- [ ] API Layer: YahooFinance integration
+- [x] API Layer: YahooFinance integration
 - [x] Database Layer: ClickHouse schema for time series data
-- [ ] Data Sync: Automated data ingestion pipeline
+- [x] Data Sync: Automated data ingestion pipeline
+  - [x] Daily scheduled ingestion
+  - [x] Intraday scheduled ingestion
+  - [x] Retry strategy with exponential backoff
+  - [x] Alert logging for failures
 - [ ] Analytics Engine: Model pipeline framework
 - [ ] Web UI: Dashboard and visualization
 - [ ] Extensibility: Plugin system for custom strategies
-- [ ] Error Monitoring: Logging, alerts, health endpoints
-- [ ] Testing: Comprehensive test suite
+- [x] Error Monitoring: Logging, alerts, health endpoints
+- [x] Testing: Comprehensive test suite
 
 ## Contributing
 

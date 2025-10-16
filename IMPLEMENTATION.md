@@ -31,8 +31,22 @@ This implementation provides a complete data ingestion pipeline for fetching sto
 
 ### 5. Scheduled Ingestion
 - Automatic daily data ingestion (6 PM by default)
+- Intraday quote updates (every 15 minutes during market hours)
 - Configurable symbols and history period
 - Incremental updates
+- Independent enable/disable for daily and intraday schedules
+
+### 6. Retry Strategy
+- Automatic retry on failures with exponential backoff
+- Configurable retry attempts and delays
+- Recovery methods for exhausted retries
+- Alert logging for critical failures
+
+### 7. Alert Logging
+- Separate ALERT logger for critical issues
+- Tracks consecutive failures
+- Configurable failure threshold
+- Proactive notification of service degradation
 
 ## Architecture
 
@@ -55,16 +69,19 @@ This implementation provides a complete data ingestion pipeline for fetching sto
 **Purpose**: Fetch data from Yahoo Finance and persist to ClickHouse
 
 **Components**:
-- `DataIngestionApplication.java` - Spring Boot main class with scheduling
+- `DataIngestionApplication.java` - Spring Boot main class with scheduling and retry enabled
 - `DataIngestionService.java` - Data fetching and ingestion logic
+- `SchedulerService.java` - Scheduled task orchestration with retry and alerting
 - `ClickHouseRepository.java` - Database operations
 - `MarketData.java` - Entity model
 
 **Features**:
-- Scheduled ingestion (configurable cron expression)
+- Scheduled ingestion (daily and intraday)
 - Historical data backfill
 - Current quote ingestion
 - Batch processing
+- Retry strategy with exponential backoff
+- Alert logging for failures
 
 ## Configuration
 
@@ -97,7 +114,22 @@ ingestion:
   history:
     days: 30
   schedule:
-    cron: "0 0 18 * * ?"  # Daily at 6 PM
+    # Daily update at 6 PM (after market close)
+    daily:
+      cron: "0 0 18 * * ?"
+      enabled: true
+    # Intraday updates every 15 minutes during market hours (9:30 AM - 4:00 PM EST)
+    intraday:
+      cron: "0 */15 9-16 * * MON-FRI"
+      enabled: true
+  retry:
+    maxAttempts: 3
+    backoffDelay: 2000  # milliseconds
+    maxBackoffDelay: 10000  # milliseconds
+    multiplier: 2.0
+  alert:
+    enabled: true
+    threshold: 3  # Number of consecutive failures before alert
 ```
 
 ## Usage
@@ -160,6 +192,58 @@ String[] symbols = {"AAPL", "GOOGL", "MSFT"};
 ingestionService.ingestHistoricalDataBatch(symbols, 30);
 ```
 
+## Scheduler Configuration
+
+The `SchedulerService` provides two types of scheduled ingestion:
+
+### Daily Ingestion
+- **Purpose**: Fetch end-of-day historical data
+- **Default Schedule**: Daily at 6:00 PM (after market close)
+- **Configuration**:
+  ```yaml
+  ingestion:
+    schedule:
+      daily:
+        cron: "0 0 18 * * ?"  # Customize as needed
+        enabled: true
+  ```
+- **Behavior**: Fetches last 7 days of data to catch up on any missed data
+
+### Intraday Ingestion
+- **Purpose**: Fetch real-time quotes during market hours
+- **Default Schedule**: Every 15 minutes, Monday-Friday, 9:00 AM - 4:00 PM EST
+- **Configuration**:
+  ```yaml
+  ingestion:
+    schedule:
+      intraday:
+        cron: "0 */15 9-16 * * MON-FRI"  # Customize as needed
+        enabled: true
+  ```
+- **Behavior**: Fetches current quotes for all configured symbols
+
+### Retry Configuration
+Both schedulers support automatic retry with exponential backoff:
+
+```yaml
+ingestion:
+  retry:
+    maxAttempts: 3              # Maximum retry attempts
+    backoffDelay: 2000          # Initial delay in milliseconds
+    maxBackoffDelay: 10000      # Maximum delay in milliseconds
+    multiplier: 2.0             # Backoff multiplier
+```
+
+### Alert Configuration
+Configure when alerts are triggered:
+
+```yaml
+ingestion:
+  alert:
+    enabled: true
+    threshold: 3  # Alert after N consecutive failures
+```
+
 ## Error Handling
 
 The implementation includes comprehensive error handling:
@@ -168,6 +252,22 @@ The implementation includes comprehensive error handling:
 2. **Invalid Symbols**: Returns `YahooFinanceException` with informative message
 3. **Rate Limiting**: Returns HTTP 429 (Too Many Requests) when rate limit exceeded
 4. **Database Errors**: Logged with context, operations continue for remaining records
+5. **Retry Logic**: Automatic retry with exponential backoff for transient failures
+6. **Alert Logging**: Critical failures are logged to a separate ALERT logger
+
+### Alert Logger
+A separate logger (`ALERT.SchedulerService`) is used for critical failures:
+- Daily ingestion failures after threshold reached
+- Intraday ingestion high failure rates (>50% symbols failed)
+- Complete failures after all retry attempts exhausted
+
+Configure alert logging in `logback.xml` or similar:
+```xml
+<logger name="ALERT" level="ERROR">
+  <appender-ref ref="ALERT_FILE" />
+  <!-- Or send to monitoring system, email, Slack, etc. -->
+</logger>
+```
 
 ## Testing
 
@@ -179,6 +279,11 @@ The implementation includes comprehensive error handling:
 ### Test Coverage
 - `YahooFinanceServiceTest` - Service initialization and model tests
 - `ClickHouseRepositoryTest` - Repository logic tests
+- `SchedulerServiceTest` - Scheduler service with 14 comprehensive test cases
+  - Success and failure scenarios
+  - Retry behavior
+  - Alert thresholds
+  - Recovery methods
 
 Note: Integration tests requiring network access are simplified to avoid dependencies on external services.
 
@@ -187,6 +292,8 @@ Note: Integration tests requiring network access are simplified to avoid depende
 ### Key Libraries
 - **yahoofinance-api** (3.17.0) - Yahoo Finance data fetching
 - **resilience4j** (2.1.0) - Rate limiting
+- **spring-retry** (2.0.4) - Retry mechanism with exponential backoff
+- **spring-aspects** (6.1.3) - AOP support for retry annotations
 - **clickhouse-jdbc** (0.6.0) - ClickHouse database driver
 - **Spring Boot** (3.2.2) - Application framework
 
@@ -202,9 +309,10 @@ All code has been refactored from Kotlin to Java as required:
 ## Monitoring and Logging
 
 All operations are logged with appropriate levels:
-- `INFO` - Normal operations (fetching data, saving records)
-- `WARN` - Rate limiting, invalid symbols
-- `ERROR` - Network failures, database errors
+- `INFO` - Normal operations (fetching data, saving records, scheduler execution)
+- `WARN` - Rate limiting, invalid symbols, partial failures
+- `ERROR` - Network failures, database errors, ingestion failures
+- `ALERT.ERROR` - Critical failures (consecutive failures, exhausted retries)
 
 Configure logging level in `application.yml`:
 ```yaml
@@ -212,7 +320,15 @@ logging:
   level:
     com.financial.analytics: INFO
     yahoofinance: WARN
+    ALERT: ERROR  # Ensure alert logs are captured
 ```
+
+### Monitoring Scheduler Health
+The `SchedulerService` provides methods for health monitoring:
+- `getConsecutiveFailures()` - Get current failure count
+- `resetConsecutiveFailures()` - Reset counter after manual intervention
+
+These can be exposed via Spring Boot Actuator for external monitoring.
 
 ## Future Enhancements
 
