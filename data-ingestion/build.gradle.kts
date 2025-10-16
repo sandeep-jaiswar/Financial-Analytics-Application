@@ -6,8 +6,8 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 dependencies {
@@ -32,6 +32,10 @@ dependencies {
     
     // Scheduling
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    
+    // Retry mechanism
+    implementation("org.springframework.retry:spring-retry:2.0.4")
+    implementation("org.springframework:spring-aspects:6.1.3")
     
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.mockito:mockito-core:5.8.0")
