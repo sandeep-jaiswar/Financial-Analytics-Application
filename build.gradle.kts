@@ -4,6 +4,7 @@ plugins {
     kotlin("plugin.spring") version "1.9.22" apply false
     id("org.springframework.boot") version "3.2.2" apply false
     id("io.spring.dependency-management") version "1.1.4" apply false
+    jacoco
 }
 
 allprojects {
@@ -17,6 +18,7 @@ allprojects {
 
 subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
+    apply(plugin = "jacoco")
 
     dependencies {
         val implementation by configurations
@@ -32,12 +34,21 @@ subprojects {
 
     tasks.withType<Test> {
         useJUnitPlatform()
+        finalizedBy(tasks.withType<JacocoReport>())
+    }
+
+    tasks.withType<JacocoReport> {
+        reports {
+            xml.required.set(true)
+            html.required.set(true)
+            csv.required.set(true)
+        }
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {
             freeCompilerArgs = listOf("-Xjsr305=strict")
-            jvmTarget = "21"
+            jvmTarget = "17"
         }
     }
 }
