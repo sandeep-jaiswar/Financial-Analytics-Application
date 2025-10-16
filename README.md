@@ -1,5 +1,8 @@
 # Financial Analytics Application
 
+[![CI Pipeline](https://github.com/sandeep-jaiswar/Financial-Analytics-Application/actions/workflows/ci.yml/badge.svg)](https://github.com/sandeep-jaiswar/Financial-Analytics-Application/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/sandeep-jaiswar/Financial-Analytics-Application/actions/workflows/ci.yml/badge.svg?event=codeql)](https://github.com/sandeep-jaiswar/Financial-Analytics-Application/security/code-scanning)
+
 A comprehensive financial analytics platform that pulls market data from YahooFinance API, stores it in ClickHouse, and enables quantitative analysis through pluggable algorithmic modules.
 
 ## Architecture
@@ -40,14 +43,25 @@ This is a Gradle multi-module project with the following components:
 - **Framework**: Spring Boot 3.2.2
 - **Database**: ClickHouse (optimized for analytical queries)
 - **Data Source**: YahooFinance API
-- **JDK**: Java 21+ (with support for Java 25)
+- **JDK**: Java 17+
 - **Gradle**: 8.10.2+
+- **CI/CD**: GitHub Actions with automated testing, coverage, and security scanning
+
+## Continuous Integration
+
+This project uses GitHub Actions for CI/CD with:
+- Automated build and testing on all pushes and PRs
+- JaCoCo code coverage reporting
+- CodeQL security scanning
+- Test result reporting
+
+For more details, see [CI Setup Documentation](.github/CI_SETUP.md).
 
 ## Getting Started
 
 ### Prerequisites
 
-- JDK 21 or higher (Java 25 supported)
+- JDK 17 or higher
 - Gradle 8.10.2+ (wrapper included)
 - Docker and Docker Compose (for local ClickHouse instance)
 - ClickHouse instance (for data-ingestion module)
@@ -88,6 +102,9 @@ For more details on database setup, see [db/README.md](db/README.md).
 
 # Run tests for a specific module
 ./gradlew :api:test
+
+# Run tests with coverage reports
+./gradlew test jacocoTestReport
 ```
 
 ### Running Applications
@@ -197,6 +214,7 @@ financial-analytics-application/
   - [x] Intraday scheduled ingestion
   - [x] Retry strategy with exponential backoff
   - [x] Alert logging for failures
+- [x] CI/CD: GitHub Actions pipeline with automated testing and security scanning
 - [ ] Analytics Engine: Model pipeline framework
 - [ ] Web UI: Dashboard and visualization
 - [ ] Extensibility: Plugin system for custom strategies

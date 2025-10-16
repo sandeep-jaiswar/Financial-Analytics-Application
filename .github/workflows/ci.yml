@@ -69,6 +69,10 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
       
+    - name: Run ktlint check
+      run: ./gradlew ktlintCheck --no-daemon
+      continue-on-error: true
+      
     - name: Run check task
       run: ./gradlew check --no-daemon
       
