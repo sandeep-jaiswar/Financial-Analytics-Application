@@ -1,0 +1,30 @@
+{% extends 'ui_app/base.html' %}
+
+{% block content %}
+<div class="content">
+    <h2>Stock Quotes</h2>
+    <p>Configured symbols for data ingestion and monitoring:</p>
+    
+    <div class="feature-grid">
+        {% for symbol in symbols %}
+        <div class="feature-card">
+            <h3>{{ symbol }}</h3>
+            <p>
+                <a href="/api/stocks/{{ symbol }}/quote/" target="_blank" style="color: #667eea; text-decoration: none;">
+                    View Current Quote →
+                </a>
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+        <h3>API Endpoints</h3>
+        <ul style="line-height: 2; color: #666;">
+            <li><strong>GET</strong> /api/stocks/{symbol}/quote/ - Get real-time quote</li>
+            <li><strong>GET</strong> /api/stocks/{symbol}/history/?from=YYYY-MM-DD&to=YYYY-MM-DD - Get historical data</li>
+            <li><strong>POST</strong> /api/stocks/quotes/ - Get multiple quotes (body: {"symbols": ["AAPL", "GOOGL"]})</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

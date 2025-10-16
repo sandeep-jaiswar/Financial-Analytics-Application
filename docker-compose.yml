@@ -29,6 +29,89 @@ services:
         soft: 262144
         hard: 262144
 
+  redis:
+    image: redis:7-alpine
+    container_name: financial-analytics-redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - financial-analytics
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    container_name: financial-analytics-django
+    hostname: django
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-insecure-secret-key}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-True}
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: 9000
+      CELERY_BROKER_URL: redis://redis:6379/0
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - financial-analytics
+    command: python manage.py runserver 0.0.0.0:8000
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    container_name: financial-analytics-celery
+    hostname: celery
+    volumes:
+      - .:/app
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-insecure-secret-key}
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: 9000
+      CELERY_BROKER_URL: redis://redis:6379/0
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - financial-analytics
+    command: celery -A financial_analytics worker -l info
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    container_name: financial-analytics-celery-beat
+    hostname: celery-beat
+    volumes:
+      - .:/app
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-insecure-secret-key}
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: 9000
+      CELERY_BROKER_URL: redis://redis:6379/0
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - financial-analytics
+    command: celery -A financial_analytics beat -l info
+
   # Optional: ClickHouse client for easy CLI access
   clickhouse-client:
     image: clickhouse/clickhouse-client:24.1-alpine
