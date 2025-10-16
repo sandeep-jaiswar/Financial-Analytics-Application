@@ -5,7 +5,27 @@
 
 A comprehensive financial analytics platform that pulls market data from YahooFinance API, stores it in ClickHouse, and enables quantitative analysis through pluggable algorithmic modules.
 
-## Architecture
+> **🚀 New: Django Implementation Available!**  
+> This application has been migrated to **Django (Python)** while preserving all Spring Boot features. See [README_DJANGO.md](README_DJANGO.md) for the Django version.
+
+## Available Implementations
+
+### Django (Python) - ✅ Recommended
+- **Language**: Python 3.12
+- **Framework**: Django 5.0 + Django REST Framework
+- **Task Scheduling**: Celery with Redis
+- **Documentation**: [README_DJANGO.md](README_DJANGO.md)
+- **Status**: ✅ Fully functional with all features
+
+### Spring Boot (Java/Kotlin) - Legacy
+- **Language**: Kotlin & Java
+- **Framework**: Spring Boot 3.2.2
+- **Documentation**: See sections below
+- **Status**: ⚠️ Being phased out in favor of Django
+
+---
+
+## Spring Boot Architecture (Legacy)
 
 This is a Gradle multi-module project with the following components:
 
