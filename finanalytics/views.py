@@ -1,5 +1,5 @@
 import requests
-from clickhouse_driver import Client
+import clickhouse_connect
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
@@ -7,16 +7,32 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def get_clickhouse_client():
+    """
+    Centralized ClickHouse client using settings.CLICKHOUSE
+    """
+    conf = settings.CLICKHOUSE
+    return clickhouse_connect.get_client(
+        host=conf['HOST'],
+        port=conf['PORT'],
+        username=conf['USER'],
+        password=conf['PASSWORD'],
+        database=conf['DATABASE']
+    )
+
 @require_http_methods(["GET"])
 def load_eq_masters(request):
     """
     Fetch EQ Masters data from NSE and insert into ClickHouse
     """
     try:
-        # Fetch data from NSE API with proper headers
         nse_url = "https://charting.nseindia.com/Charts/GetEQMasters"
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'User-Agent': (
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/91.0.4472.124 Safari/537.36'
+            ),
             'Accept': 'text/plain, */*; q=0.01',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
@@ -24,98 +40,99 @@ def load_eq_masters(request):
             'Referer': 'https://www.nseindia.com/',
             'X-Requested-With': 'XMLHttpRequest'
         }
-        
+
         session = requests.Session()
+        try:
+            # Pre-flight request (some environments require it)
+            session.get("https://www.nseindia.com", headers=headers, timeout=10)
+        except requests.RequestException:
+            logger.debug("NSE homepage preflight failed or skipped")
+
         response = session.get(nse_url, headers=headers, timeout=60)
         response.raise_for_status()
-        
-        # Parse the pipe-delimited response
-        lines = response.text.strip().split('\n')
-        
-        # Skip header line
-        data_lines = lines[1:]
-        
+
+        text = response.text.strip()
+        if not text:
+            return JsonResponse({
+                'status': 'success',
+                'message': 'No data returned from NSE',
+                'records_count': 0,
+                'data': []
+            })
+
+        lines = text.splitlines()
+        data_lines = lines[1:] if len(lines) > 1 and '|' in lines[0] else lines
+
         records = []
         for line in data_lines:
-            if line.strip():
-                parts = line.split('|')
-                if len(parts) >= 4:
-                    records.append({
-                        'scrip_code': int(parts[0]),
-                        'trading_symbol': parts[1],
-                        'description': parts[2],
-                        'instrument_type': int(parts[3])
-                    })
-        
-        # Insert into ClickHouse with proper error handling
+            if not line.strip():
+                continue
+            parts = line.split('|')
+            if len(parts) < 4:
+                continue
+            try:
+                scrip_code = int(parts[0])
+            except (ValueError, TypeError):
+                continue
+
+            trading_symbol = parts[1].strip()
+            description = parts[2].strip()
+            ticker = trading_symbol.split('-')[0] + ".BO"
+            try:
+                instrument_type = int(parts[3])
+            except (ValueError, TypeError):
+                instrument_type = 0
+
+            records.append((scrip_code, trading_symbol, ticker, description, instrument_type))
+
+        # ----------------------------------------------------------
+        # Insert into ClickHouse
+        # ----------------------------------------------------------
         try:
-            client_config = {
-                'host': settings.CLICKHOUSE_HOST,
-                'port': settings.CLICKHOUSE_PORT,
-                'user': settings.CLICKHOUSE_USER,
-                'database': settings.CLICKHOUSE_DATABASE
-            }
-            
-            # Only add password if it's not empty
-            if settings.CLICKHOUSE_PASSWORD:
-                client_config['password'] = settings.CLICKHOUSE_PASSWORD
-                
-            client = Client(**client_config)
-            
-            # Test connection first
-            client.execute("SELECT 1")
-            
-            # Create database if it doesn't exist
-            client.execute(f"CREATE DATABASE IF NOT EXISTS {settings.CLICKHOUSE_DATABASE}")
-            
-            # Create table if it doesn't exist
-            create_table_sql = """
-            CREATE TABLE IF NOT EXISTS eq_masters (
-                scrip_code UInt32,
-                trading_symbol String,
-                description String,
-                instrument_type UInt8,
-                created_at DateTime DEFAULT now()
-            ) ENGINE = MergeTree()
-            ORDER BY (scrip_code, trading_symbol)
-            PARTITION BY toYYYYMM(created_at)
-            """
-            client.execute(create_table_sql)
-            
-            # Clear existing data (optional - remove if you want to keep historical data)
-            client.execute("TRUNCATE TABLE eq_masters")
-            
-            # Insert new data
+            client = get_clickhouse_client()
+
+            # quick connectivity test
+            client.query("SELECT 1")
+
+            print(f"Inserting {len(records)} EQ Masters records into ClickHouse")
+            print(client)
+
+
+            tables = client.query("SHOW TABLES").result_rows
+            print("Existing tables:", tables)
+            print(records[:5])  # Print first 5 records for verification
+
             if records:
-                client.execute(
-                    "INSERT INTO eq_masters (scrip_code, trading_symbol, description, instrument_type) VALUES",
-                    records
+                client.insert(
+                    'eq_masters',
+                    records,
+                    column_names=['scrip_code', 'trading_symbol', 'ticker', 'description', 'instrument_type']
                 )
-                
+
         except Exception as db_error:
-            logger.error(f"ClickHouse error: {db_error}")
+            logger.error("ClickHouse error: %s", db_error)
             return JsonResponse({
                 'status': 'error',
-                'message': 'Database connection failed. Please check ClickHouse configuration.',
+                'message': 'Database operation failed',
                 'error': str(db_error)
             }, status=500)
-        
+
         return JsonResponse({
             'status': 'success',
             'message': f'Successfully loaded {len(records)} EQ Masters records',
             'records_count': len(records)
         })
-        
+
     except requests.RequestException as e:
-        logger.error(f"Failed to fetch data from NSE: {e}")
+        logger.error("Failed to fetch data from NSE: %s", e)
         return JsonResponse({
             'status': 'error',
             'message': 'Failed to fetch data from NSE API',
             'error': str(e)
         }, status=500)
-        
+
     except Exception as e:
-        logger.error(f"Failed to load EQ Masters: {e}")
+        logger.exception("Unexpected failure in load_eq_masters")
         return JsonResponse({
             'status': 'error',
             'message': 'Failed to load EQ Masters data',
