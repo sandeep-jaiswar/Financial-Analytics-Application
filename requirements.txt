@@ -1,3 +1,26 @@
-clickhouse-connect==0.6.8
+# Django and REST Framework
+Django==5.0.1
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+
+# Database drivers
+clickhouse-driver==0.2.7
+clickhouse-connect==0.7.19
+psycopg2-binary==2.9.9
+
+# Yahoo Finance API
+yfinance==0.2.36
+
+# Task scheduling
+celery==5.3.6
+redis==5.0.1
+django-celery-beat==2.5.0
+
+# Rate limiting
+django-ratelimit==4.1.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Utilities
 requests==2.31.0
-django==5.2.7

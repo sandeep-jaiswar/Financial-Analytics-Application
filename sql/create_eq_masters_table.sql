@@ -1,6 +1,7 @@
-CREATE TABLE IF NOT EXISTS eq_masters (
+CREATE TABLE eq_masters (
     scrip_code UInt32,
     trading_symbol String,
+    ticker String,
     description String,
     instrument_type UInt8,
     created_at DateTime DEFAULT now()
