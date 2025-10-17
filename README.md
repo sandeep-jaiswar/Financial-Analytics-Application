@@ -1,6 +1,6 @@
 # Financial Analytics Application
 
-A comprehensive financial analytics platform built with Django that pulls market data from YahooFinance API, stores it in ClickHouse, and enables quantitative analysis through pluggable algorithmic modules.
+A comprehensive financial analytics platform built with Django that retrieves market data from **NSE (National Stock Exchange of India)** using the nsemine library, stores it in ClickHouse, and enables quantitative analysis through pluggable algorithmic modules.
 
 ## Technology Stack
 
@@ -9,7 +9,7 @@ A comprehensive financial analytics platform built with Django that pulls market
 - **REST API**: Django REST Framework 3.14.0
 - **Task Queue**: Celery 5.3.6 with Redis
 - **Database**: ClickHouse (optimized for analytical queries)
-- **Data Source**: YahooFinance API (via yfinance)
+- **Data Source**: NSE India (via nsemine library)
 
 ## Architecture
 
