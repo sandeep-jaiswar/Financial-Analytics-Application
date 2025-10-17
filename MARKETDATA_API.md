@@ -2,6 +2,18 @@
 
 This document provides information about the REST API endpoints for retrieving financial market data from ClickHouse.
 
+## Version 2.0 - NSE Market Data
+
+This API now uses **NSE (National Stock Exchange of India)** market data powered by the `nsemine` library. The data is stored in ClickHouse tables:
+- `eq_masters`: Master list of equity instruments with ticker symbols and descriptions
+- `eq_ohlcv`: Historical OHLCV (Open, High, Low, Close, Volume) data
+
+**Key improvements:**
+- Uses `clickhouse-connect` for modern, efficient ClickHouse connectivity
+- Implements parallel processing for fetching latest data from multiple symbols
+- Optimized queries with window functions for better performance
+- NSE-specific data with ticker symbols and trading symbols
+
 ## Base URL
 
 All endpoints are prefixed with: `http://localhost:8000/api/marketdata/`
@@ -23,16 +35,20 @@ Retrieves a list of all available stock symbols with metadata.
 {
   "symbols": [
     {
-      "symbol": "AAPL",
+      "ticker": "INFY",
+      "tradingSymbol": "INFY-EQ",
+      "description": "Infosys Limited",
       "recordCount": 250,
-      "firstDate": "2024-01-01",
-      "lastDate": "2024-10-15"
+      "firstDate": "2024-01-01T00:00:00",
+      "lastDate": "2024-10-15T00:00:00"
     },
     {
-      "symbol": "GOOGL",
+      "ticker": "TCS",
+      "tradingSymbol": "TCS-EQ",
+      "description": "Tata Consultancy Services Limited",
       "recordCount": 250,
-      "firstDate": "2024-01-01",
-      "lastDate": "2024-10-15"
+      "firstDate": "2024-01-01T00:00:00",
+      "lastDate": "2024-10-15T00:00:00"
     }
   ],
   "pagination": {
@@ -144,12 +160,17 @@ curl "http://localhost:8000/api/marketdata/MSFT/?page=2&per_page=25"
 
 Retrieves the most recent market data for all symbols or a specific set of symbols.
 
+**Features:**
+- **Parallel Processing**: When fetching data for multiple specific symbols, the endpoint uses ThreadPoolExecutor to fetch data concurrently, significantly improving performance.
+- **Optimized Queries**: Uses ClickHouse window functions (ROW_NUMBER) for efficient retrieval of the latest record per ticker.
+
 **Endpoint:** `GET /api/marketdata/latest/`
 
 **Query Parameters:**
-- `symbols` (optional): Comma-separated list of stock symbols (e.g., AAPL,GOOGL,MSFT)
+- `symbols` (optional): Comma-separated list of stock ticker symbols (e.g., INFY,TCS,RELIANCE)
 - `page` (optional, default: 1): Page number for pagination
 - `per_page` (optional, default: 50, max: 100): Number of items per page
+- `parallel` (optional, default: true): Enable/disable parallel processing for multiple symbols
 
 **Response:**
 ```json
